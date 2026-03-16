@@ -11,7 +11,7 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/auth/register", {
+      await axios.post("https://notely-0tkz.onrender.com/api/auth/register", {
         name: name,
         email: email,
         password: password,

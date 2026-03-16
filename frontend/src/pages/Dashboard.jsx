@@ -18,7 +18,7 @@ const Dashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:5000/api/note", {
+      const response = await axios.get("https://notely-0tkz.onrender.com/api/note", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -40,7 +40,7 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        "http://localhost:5000/api/note",
+        "https://notely-0tkz.onrender.com/api/note",
         { title: title, body: body },
         {
           headers: {
@@ -60,7 +60,7 @@ const Dashboard = () => {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5000/api/note/${id}`, {
+      await axios.delete(`https://notely-0tkz.onrender.com/api/note/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -88,7 +88,7 @@ const Dashboard = () => {
   const handleEdit = async () => {
     const token = localStorage.getItem("token");
     await axios.put(
-      `http://localhost:5000/api/note/${selectedNote._id}`,
+      `https://notely-0tkz.onrender.com/api/note/${selectedNote._id}`,
       {
         title: editTitle,
         body: editBody,

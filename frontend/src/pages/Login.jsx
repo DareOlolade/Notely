@@ -1,5 +1,4 @@
 import axios from 'axios'
-import React from 'react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -11,7 +10,7 @@ const Login = () => {
     const handleSubmit = async(e) => {
         e.preventDefault()
         try {
-            const response = await axios.post("http://localhost:5000/api/auth/login", {email: email, password: password})
+            const response = await axios.post("https://notely-0tkz.onrender.com/api/auth/login", {email: email, password: password})
             localStorage.setItem("token", response.data.token)
             navigate("/")
         } catch (error) {
