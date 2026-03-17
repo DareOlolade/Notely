@@ -448,6 +448,7 @@ button {
   color: var(--clr-text);
   border-radius: 5px;
   border: 1px solid var(--clr-border);
+  outline: none;
   margin-bottom: 1rem;
   transition: all 0.2s ease;
 }

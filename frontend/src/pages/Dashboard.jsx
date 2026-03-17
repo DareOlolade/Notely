@@ -236,7 +236,7 @@ const Dashboard = () => {
                 </div>
                 <div className="editor-footer">
                   <p>
-                    last updated at
+                    Last Updated: {" "}{" "} 
                     {new Date(selectedNote.updatedAt).toLocaleDateString()}
                   </p>
 
