@@ -2,23 +2,29 @@ import axios from "axios";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaArrowLeft, FaBars } from "react-icons/fa";
 
 const Dashboard = () => {
   const [notes, setNotes] = useState([]);
   const [error, setError] = useState(null);
   const [title, setTitle] = useState("");
-  const [body, setBody] = useState(" ");
+  const [body, setBody] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editBody, setEditBody] = useState("");
   const [selectedNote, setSelectedNote] = useState(null);
+  const [showEditor, setShowEditor] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
   const fetchNotes = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const response = await axios.get("https://notely-0tkz.onrender.com/api/note", {
+      const response = await axios.get(`${API_URL}/api/note`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -40,7 +46,7 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        "https://notely-0tkz.onrender.com/api/note",
+        `${API_URL}/api/note`,
         { title: title, body: body },
         {
           headers: {
@@ -60,13 +66,15 @@ const Dashboard = () => {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`https://notely-0tkz.onrender.com/api/note/${id}`, {
+      await axios.delete(`${API_URL}/api/note/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      setEditBody("")
-      setEditTitle("")
+      setEditBody("");
+      setEditTitle("");
+      setSelectedNote(null);
+      setShowEditor(false)
       fetchNotes();
     } catch (error) {
       setError(error.message);
@@ -86,25 +94,30 @@ const Dashboard = () => {
   }, [selectedNote]);
 
   const handleEdit = async () => {
-    const token = localStorage.getItem("token");
-    await axios.put(
-      `https://notely-0tkz.onrender.com/api/note/${selectedNote._id}`,
-      {
-        title: editTitle,
-        body: editBody,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `${API_URL}/api/note/${selectedNote._id}`,
+        {
+          title: editTitle,
+          body: editBody,
         },
-      },
-    );
-    fetchNotes();
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      setShowEditor(false)
+      fetchNotes();
+    } catch (error) {
+      setError(error.message);
+    }
   };
   return (
     <div className="dashboard">
       {/* =========SIDEBAR============= */}
-      <div className="sidebar">
+      <div className={`sidebar ${isOpen ? "open" : ""}`}>
         <div className="sidebar-heading">
           <div className="logo"></div>
           <h1>Notely</h1>
@@ -125,10 +138,14 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      {isOpen && (
+        <div className="sidebar-overlay" onClick={() => setIsOpen(false)} />
+      )}
 
       {/* ==================MAIN================ */}
       <div className="main">
         <div className="main-split">
+
           <div className="notes-list">
             <header>
               <h1>Notes</h1>
@@ -138,7 +155,19 @@ const Dashboard = () => {
               >
                 + New
               </button>
+              <FaBars
+                size="19px"
+                className="header-hamburger"
+                onClick={() => setIsOpen(!isOpen)}
+              />
             </header>
+            <input
+              className="search-input"
+              type="text"
+              placeholder="Search notes..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             {showForm && (
               <form className="note-form" onSubmit={handleSubmit}>
                 <input
@@ -157,28 +186,44 @@ const Dashboard = () => {
               </form>
             )}
 
-            {notes.map((note) => (
-              <div
-                onClick={() => setSelectedNote(note)}
-                className={`note-card ${selectedNote?._id === note._id ? "note-card-active" : ""}`}
-                key={note._id}
-              >
-                <h1>{note.title}</h1>
-                <p className="note-card-body">{note.body.slice(0, 60)}...</p>
+            {notes
+              .filter((note) =>
+                note.title.toLowerCase().includes(search.toLowerCase()),
+              )
+              .map((note) => (
+                <div
+                  onClick={() => {
+                    setSelectedNote(note);
+                    setShowEditor(true);
+                  }}
+                  className={`note-card ${selectedNote?._id === note._id ? "note-card-active" : ""}`}
+                  key={note._id}
+                >
+                  <h1>{note.title}</h1>
+                  <p className="note-card-body">{note.body.slice(0, 60)}...</p>
 
-                <div className="note-card-last-line">
-                  <p className="note-card-timestamps">
-                    {new Date(note.createdAt).toLocaleDateString()}
-                  </p>
+                  <div className="note-card-last-line">
+                    <p className="note-card-timestamps">
+                      {new Date(note.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            <button className="fab" onClick={() => setShowForm(!showForm)}>
+              +
+            </button>
           </div>
 
-          <div className="editor">
+          <div className={`editor ${showEditor ? "editor-mobile-open" : ""}`}>
             {selectedNote && (
               <div className="editor-content">
                 <div className="editor-top">
+                  <button
+                    className="editor-back-btn"
+                    onClick={() => setShowEditor(false)}
+                  >
+                    <FaArrowLeft /> Back
+                  </button>
                   <input
                     type="text"
                     value={editTitle}
@@ -195,18 +240,20 @@ const Dashboard = () => {
                     {new Date(selectedNote.updatedAt).toLocaleDateString()}
                   </p>
 
-                  <button
-                    className="editor-delete-btn"
-                    onClick={() => handleDelete(selectedNote._id)}
-                  >
-                    Delete
-                  </button>
-                  <button
-                    onClick={() => handleEdit()}
-                    className="editor-save-btn"
-                  >
-                    Save note
-                  </button>
+                  <div className="editor-footer-btn">
+                    <button
+                      className="editor-delete-btn"
+                      onClick={() => handleDelete(selectedNote._id)}
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => handleEdit()}
+                      className="editor-save-btn"
+                    >
+                      {loading ? "Saving..." : "Save"}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

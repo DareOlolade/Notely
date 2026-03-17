@@ -7,10 +7,12 @@ const Login = () => {
     const [password, setPassword] = useState("")
     const[error, setError] = useState(null)
     const navigate = useNavigate()
+     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
     const handleSubmit = async(e) => {
         e.preventDefault()
         try {
-            const response = await axios.post("https://notely-0tkz.onrender.com/api/auth/login", {email: email, password: password})
+            const response = await axios.post(`${API_URL}/api/auth/login`, {email: email, password: password})
             localStorage.setItem("token", response.data.token)
             navigate("/")
         } catch (error) {

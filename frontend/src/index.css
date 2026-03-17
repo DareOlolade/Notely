@@ -27,7 +27,7 @@
 }
 
 body {
-  background-color: #0f0f13;
+  background-color: var(--clr-page-bg);
   font-family: var(--ff);
   color: var(--clr-text);
 }
@@ -40,6 +40,24 @@ h1{
 h2{
   font-size: var(--fs-h2);
   font-weight: var(--fw-500);
+}
+
+button {
+  font-family: var(--ff);
+  cursor: pointer;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--clr-page-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--clr-border);
+  border-radius: 10px;
 }
 /* =================REGISTER AND LOGIN==================== */
 .auth-page {
@@ -95,6 +113,20 @@ h2{
   border-radius: 10px;
   color: white;
   border: none;
+}
+
+.register_container button,
+.login-container button,
+.editor-save-btn,
+.header-new-note-btn {
+  transition: all 0.2s ease;
+}
+
+.register_container button:hover,
+.login-container button:hover,
+.editor-save-btn:hover,
+.header-new-note-btn:hover {
+  opacity: 0.9;
 }
 
 .register_container .existing-account, .login-container .register {
@@ -162,6 +194,7 @@ h2{
   border-radius: 5px;
   cursor: pointer;
   font-size: 15px;
+  transition: all 0.2s ease;
 }
 
 .sidebar ul li:hover {
@@ -179,6 +212,9 @@ h2{
   cursor: pointer;
 }
 
+.sidebar-overlay{
+  display: none;
+}
 
 
 /* ====MAIN==== */
@@ -230,6 +266,13 @@ h2{
   color: var(--clr-text);
 }
 
+.main .note-form input::placeholder{
+  color: var(--clr-muted);
+}
+.main .note-form textarea::placeholder{
+  color: var(--clr-muted);
+}
+
 .main .header-new-note-btn{
   width: auto;
   padding: 0.6rem;
@@ -241,6 +284,9 @@ h2{
   align-self: flex-end;
 }
 
+.main .header-hamburger{
+  display: none;
+}
 
 /* NOTE CARD */
 .notes-list {
@@ -261,8 +307,13 @@ h2{
   border-radius: 5px;
   border: 1px solid var(--clr-border);
   margin-bottom: 1rem;
+  transition: all 0.2s ease;
 }
 
+
+.note-card:hover {
+  border-color: var(--clr-primary);
+}
 
 .note-card h1 {
   font-size: 13px;
@@ -283,6 +334,7 @@ h2{
 
 .note-card-active {
   border-left: 3px solid var(--clr-primary);
+  background-color: rgba(127,119,221,0.05);
 }
 
 
@@ -326,7 +378,7 @@ h2{
   font-size: 14px;
   line-height: 1.7;
   width: 100%;
-  height: 300px;
+  min-height: 300px;
   resize: none;
   outline: none;
   font-family: var(--ff);
@@ -355,13 +407,17 @@ h2{
   color: var(--clr-muted);
 }
 
+.editor-footer-btn{
+  display: flex;
+  gap: 1rem;
+}
+
 .editor-delete-btn {
   background: transparent;
   border: 1px solid var(--clr-danger);
   color: var(--clr-danger);
   padding: 0.5rem 1rem;
   border-radius: 6px;
-  cursor: pointer;
   font-size: 13px;
 }
 
@@ -376,5 +432,103 @@ h2{
   align-self: flex-end;
 }
 
+.editor-back-btn{
+  display: none;
+}
+
+.fab {
+  display: none;
+}
+
+.search-input{
+  width: 100%;
+  background-color: var(--clr-card-bg);
+  padding: 1rem;
+  font-size: 1rem;
+  color: var(--clr-text);
+  border-radius: 5px;
+  border: 1px solid var(--clr-border);
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
+}
+
+.search-input::placeholder{
+  color: var(--clr-muted);
+}
+
+/* ============================MOBILE VIEW==================================== */
+
+@media (max-width: 650px){
+  .sidebar{
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+    transform: translateX(-100%);
+  }
+  .sidebar.open{
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay{
+    display: block;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0 , 0, 0.5);
+    z-index: 99;
+  }
+  .editor{
+    display: none;
+  }
 
 
+  .main .header-new-note-btn{
+    display: none;
+  }
+  .main .header-hamburger{
+    display: flex;
+    cursor: pointer;
+  }
+  .editor-mobile-open {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--clr-page-bg);
+    z-index: 98;
+    padding: 1.5rem;
+    flex-direction: column;
+  }
+  
+  .editor-back-btn {
+    display: block;
+    background: transparent;
+    border: none;
+    color: var(--clr-primary);
+    font-size: 14px;
+    margin-bottom: 1rem;
+    padding: 0;
+  }
+
+  .fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--clr-primary);
+    color: white;
+    font-size: 24px;
+    border: none;
+    z-index: 97;
+  }
+}
