@@ -133,6 +133,9 @@ button {
   margin-top: 1rem;
 }
 
+.login-container input::placeholder, .register_container input::placeholder{
+  color: var(--clr-muted);
+}
 .login-container .error, 
 .register_container .error {
   background-color: rgba(226, 75, 74, 0.1);

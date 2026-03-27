@@ -46,6 +46,7 @@ const Login = () => {
           <input
             type="email"
             value={email}
+            placeholder="email"
             onChange={(e) => {
               setEmail(e.target.value);
               setError(null);
@@ -54,6 +55,7 @@ const Login = () => {
           <input
             type="password"
             value={password}
+            placeholder="password"
             onChange={(e) => setPassword(e.target.value)}
           />
           <button disabled={loading}>
