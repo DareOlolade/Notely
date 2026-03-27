@@ -1,27 +1,55 @@
 import { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+
+    if (!name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+
+    if (!email.includes("@")) {
+      toast.error("Enter a valid email");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
     try {
-      setLoading(true);
       await axios.post(`${API_URL}/api/auth/register`, {
         name,
         email,
         password,
       });
-      navigate("/login");
+
+      const loginRes = await axios.post(`${API_URL}/api/auth/login`, {
+        email,
+        password,
+      });
+      localStorage.setItem("token", loginRes.data.token);
+
+      toast.success("Account created, You're now logged in!");
+      navigate("/");
     } catch (error) {
-      setError(error.response?.data?.message || "Something went wrong");
+      if (error.response?.status === 400) {
+        toast.error(error.response.data.message || "Invalid input");
+      } else {
+        toast.error("Something went wrong. Try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -48,7 +76,7 @@ const Register = () => {
           />
           <input
             type="password"
-            placeholder="password"
+            placeholder="Password"
             value={password}
             required
             onChange={(e) => setPassword(e.target.value)}
@@ -56,7 +84,6 @@ const Register = () => {
           <button disabled={loading}>
             {loading ? "Creating..." : "Create account"}
           </button>
-          {error && <p className="error">{error}</p>}
         </form>
         <p className="existing-account">
           Already have an account? <Link to="/login">Sign in</Link>
