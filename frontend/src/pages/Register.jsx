@@ -2,8 +2,13 @@ import { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useRef } from "react";
+
 
 const Register = () => {
+  const nameRef = useRef();
+  const emailRef = useRef();
+  const passwordRef = useRef();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -12,22 +17,26 @@ const Register = () => {
   const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
     if (!name.trim()) {
       toast.error("Name is required");
+      nameRef.current.focus()
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!email.includes("@")) {
-      toast.error("Enter a valid email");
+    if (!emailRegex.test(email)) {
+      toast.error("Enter a valid email address");
+      emailRef.current.focus()
       return;
     }
 
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters");
+      passwordRef.current.focus()
       return;
     }
+    setLoading(true);
 
     try {
       await axios.post(`${API_URL}/api/auth/register`, {
@@ -43,6 +52,9 @@ const Register = () => {
       localStorage.setItem("token", loginRes.data.token);
 
       toast.success("Account created, You're now logged in!");
+      setTimeout(() => {
+        navigate("/");
+      }, 1200);
       navigate("/");
     } catch (error) {
       if (error.response?.status === 400) {
@@ -66,16 +78,19 @@ const Register = () => {
             value={name}
             required
             onChange={(e) => setName(e.target.value)}
+            ref={nameRef}
           />
           <input
             type="email"
             placeholder="Email"
             value={email}
+            ref={emailRef}
             required
             onChange={(e) => setEmail(e.target.value)}
           />
           <input
             type="password"
+            ref={passwordRef}
             placeholder="Password"
             value={password}
             required
