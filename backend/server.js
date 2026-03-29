@@ -9,7 +9,7 @@ dotenv.config();
 connectDB();
 const app = express();
 app.use(cors({
-  origin: ["https://notely-nine-gold.vercel.app", "http://localhost:5173"],
+  origin: ["https://notely-flow.vercel.app/login", "http://localhost:5173"],
   credentials: true
 }))
 app.use(express.json());
