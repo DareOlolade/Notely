@@ -4,7 +4,7 @@ A full stack notes application built with the MERN stack. Users can register, lo
  
 ## Live Demo
  
-- **Frontend:** [https://notely-nine-gold.vercel.app](https://notely-flow.vercel.app/)
+- **Frontend:** https://notely-flow.vercel.app
 - **Backend API:** https://notely-0tkz.onrender.com
  
 ## Features
