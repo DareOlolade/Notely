@@ -106,7 +106,7 @@ button {
 .register_container label {
   color: #6b6b8a;
 }
-.register_container button, .login-container button {
+.register_container .create-account-btn, .login-container .sign-in-btn {
   background-color: #7f77dd;
   padding: 1rem;
   cursor: pointer;
@@ -167,7 +167,26 @@ button {
   }
 }
 
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
 
+.password-wrapper input {
+  width: 100%;
+  padding-right: 40px; /* Make space for the icon */
+}
+
+.toggle-button {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 1.2rem;
+}
 
 
 /* =================DASHBOARD==================== */

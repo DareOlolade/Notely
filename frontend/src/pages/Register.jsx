@@ -4,7 +4,6 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useRef } from "react";
 
-
 const Register = () => {
   const nameRef = useRef();
   const emailRef = useRef();
@@ -13,6 +12,7 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const navigate = useNavigate();
   const handleSubmit = async (e) => {
@@ -20,20 +20,20 @@ const Register = () => {
 
     if (!name.trim()) {
       toast.error("Name is required");
-      nameRef.current.focus()
+      nameRef.current.focus();
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailRegex.test(email)) {
       toast.error("Enter a valid email address");
-      emailRef.current.focus()
+      emailRef.current.focus();
       return;
     }
 
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters");
-      passwordRef.current.focus()
+      passwordRef.current.focus();
       return;
     }
     setLoading(true);
@@ -88,15 +88,22 @@ const Register = () => {
             required
             onChange={(e) => setEmail(e.target.value)}
           />
-          <input
-            type="password"
-            ref={passwordRef}
-            placeholder="Password"
-            value={password}
-            required
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <button disabled={loading}>
+          <div className="password-wrapper">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              placeholder="Password"
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              className="toggle-button"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </button>
+          </div>
+          <button className="create-account-btn" disabled={loading}>
             {loading ? "Creating..." : "Create account"}
           </button>
         </form>

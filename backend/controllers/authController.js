@@ -41,7 +41,7 @@ const loginUser = async (req, res) => {
       res.status(400).json({message: "user not found"})
     }
   } catch (error) {
-    console.error("error logining in");
+    console.error("error loging in", error.message);
     res.status(400).json({ message: "user not found" });
   }
 };
