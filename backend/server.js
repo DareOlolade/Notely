@@ -8,8 +8,10 @@ const noteRouter = require("./routes/noteRoutes")
 dotenv.config();
 connectDB();
 const app = express();
-
-app.use(cors());
+app.use(cors({
+  origin: ["https://notely-nine-gold.vercel.app", "http://localhost:5173"],
+  credentials: true
+}))
 app.use(express.json());
 app.use("/api/auth", authRouter)
 app.use("/api/note", noteRouter)
