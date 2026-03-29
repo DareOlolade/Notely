@@ -89,7 +89,8 @@ button {
     background-color: var(--clr-primary) !important;
   }
 }
-===============REGISTER AND LOGIN==================== */
+
+/* ===============REGISTER AND LOGIN==================== */
 .auth-page {
   display: grid;
   place-content: center;
