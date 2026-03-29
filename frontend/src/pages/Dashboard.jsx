@@ -2,7 +2,7 @@ import axios from "axios";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaBars } from "react-icons/fa";
+import { FaArrowLeft, FaBars, FaSun, FaMoon } from "react-icons/fa";
 
 const Dashboard = () => {
   const [notes, setNotes] = useState([]);
@@ -17,6 +17,8 @@ const Dashboard = () => {
   const [showEditor, setShowEditor] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
+
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -74,7 +76,7 @@ const Dashboard = () => {
       setEditBody("");
       setEditTitle("");
       setSelectedNote(null);
-      setShowEditor(false)
+      setShowEditor(false);
       fetchNotes();
     } catch (error) {
       setError(error.message);
@@ -108,11 +110,20 @@ const Dashboard = () => {
           },
         },
       );
-      setShowEditor(false)
+      setShowEditor(false);
       fetchNotes();
     } catch (error) {
       setError(error.message);
     }
+  };
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
   return (
     <div className="dashboard">
@@ -131,7 +142,21 @@ const Dashboard = () => {
           </ul>
 
           <div className="sidebar-base">
-            <p>Settings</p>
+            <div
+              className={`theme-toggle-shutter ${theme}`}
+              onClick={toggleTheme}
+            >
+              <div className="toggle-slider">
+                {theme === "light" ? (
+                  <FaSun size="14px" color="#ffb703" />
+                ) : (
+                  <FaMoon size="14px" color="#f1f1f1" />
+                )}
+              </div>
+              <span className="toggle-text">
+                {theme === "light" ? "Light" : "Dark"}
+              </span>
+            </div>
             <p onClick={() => handleLogout()} className="logout">
               Logout
             </p>
@@ -145,7 +170,6 @@ const Dashboard = () => {
       {/* ==================MAIN================ */}
       <div className="main">
         <div className="main-split">
-
           <div className="notes-list">
             <header>
               <h1>Notes</h1>
@@ -236,7 +260,7 @@ const Dashboard = () => {
                 </div>
                 <div className="editor-footer">
                   <p>
-                    Last Updated: {" "}{" "} 
+                    Last Updated:{" "}
                     {new Date(selectedNote.updatedAt).toLocaleDateString()}
                   </p>
 
