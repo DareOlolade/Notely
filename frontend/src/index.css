@@ -62,7 +62,6 @@ button {
 }
 
 
-
 /* ======= GLOBAL SCROLLBAR STYLLING FOR DESTOP ======== */
 @media (pointer: fine) {
   * {
@@ -381,7 +380,7 @@ button {
   left: 14px;
 }
 
-/* ====MAIN==== */
+/* ====== MAIN ====== */
 .main {
   flex: 1;
   overflow-y: auto;
@@ -514,6 +513,7 @@ button {
   flex-direction: column;
   justify-content: space-between;
 }
+
 .editor-top {
   flex: 1;
   display: flex;
@@ -548,6 +548,7 @@ button {
   font-family: var(--ff);
   scrollbar-gutter: stable;
 }
+
 .editor p {
   color: var(--clr-muted);
   font-size: 14px;
@@ -558,10 +559,10 @@ button {
 .editor-footer {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
   border-top: 1px solid var(--clr-border);
   padding-top: 1rem;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
 }
 
 .editor-empty {
@@ -577,30 +578,86 @@ button {
   gap: 1rem;
 }
 
-.editor-delete-btn {
-  background: transparent;
-  border: 1px solid var(--clr-danger);
-  color: var(--clr-danger);
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 13px;
-}
-
-.editor-save-btn {
-  width: auto;
-  padding: 0.5rem 1rem;
-  font-size: 13px;
-  background: var(--clr-primary);
-  color: var(--clr-text);
-  border: none;
-  border-radius: 4px;
-  align-self: flex-end;
-}
-
 .editor-back-btn {
   display: none;
 }
 
+.editor-note-title-input::placeholder, .editor-note-body-textarea::placeholder{
+  color: var(--clr-muted);
+}
+.editor-footer-actions {
+  display: flex;
+}
+
+/* Base style for icon buttons */
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--clr-muted);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.icon-btn:hover {
+  background-color: var(--clr-card-bg);
+  border-color: var(--clr-border);
+  color: var(--clr-primary);
+}
+
+.icon-btn.delete:hover {
+  background-color: rgba(226, 75, 74, 0.1);
+  color: var(--clr-danger);
+  border-color: rgba(226, 75, 74, 0.2);
+}
+
+.icon-btn:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--clr-sidebar);
+  color: var(--clr-text);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+  margin-bottom: 5px;
+  border: 1px solid var(--clr-border);
+}
+
+.last-updated {
+  font-size: 11px;
+  color: var(--clr-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.autosave-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: var(--fw-500);
+  transition: color 0.3s ease;
+}
+
+.autosave-status.saved {
+  color: var(--clr-muted);
+}
+
+.autosave-status.saving {
+  color: var(--clr-primary);
+}
+
+/* ============== SEARCH ========== */
 .fab {
   display: none;
 }
@@ -625,19 +682,26 @@ button {
 /* ============================MOBILE VIEW==================================== */
 
 @media (max-width: 650px) {
+  /* Fix the layout so sidebar and list don't fight */
+  .main-split {
+    display: block;
+    height: 100vh;
+  }
+
   .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     height: 100vh;
-    z-index: 100;
+    z-index: 1000; /* Sidebar over everything when open */
     transform: translateX(-100%);
   }
+
   .sidebar.open {
     transform: translateX(0);
   }
 
-  .sidebar-overlay {
+    .sidebar-overlay {
     display: block;
     position: fixed;
     top: 0;
@@ -646,56 +710,185 @@ button {
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 99;
   }
+
+  /* THE EDITOR FIX */
   .editor {
-    display: none;
+    display: none; /* Hide desktop version */
   }
 
-  .main .header-new-note-btn {
-    display: none;
-  }
-  .main .header-hamburger {
-    display: flex;
-    cursor: pointer;
-  }
-  .editor-mobile-open {
-    display: flex;
-    position: fixed;
+  /* This class must be attached to the SAME element as .editor */
+  .editor.editor-mobile-open {
+    display: flex !important;
+    position: fixed !important;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--clr-page-bg);
-    z-index: 98;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--clr-page-bg) !important; /* Ensure it's not transparent */
+    z-index: 500; /* Above the list, below the sidebar overlay */
     padding: 1.5rem;
     flex-direction: column;
+    max-width: 100%;
+  }
+
+  .editor-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+  }
+
+  .editor-top textarea {
+    min-height: 50vh; /* Ensure there is a big area to tap */
   }
 
   .editor-back-btn {
-    display: block;
-    align-self: flex-start;
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 1rem;
+    color: var(--clr-primary);
     background: transparent;
     border: none;
-    color: var(--clr-primary);
-    font-size: 14px;
-    margin-bottom: 1rem;
-    padding: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .notes-list {
+    max-width: 100%;
+    border-right: none;
+    padding: 1rem;
   }
 
   .fab {
-    display: flex;
+    display: flex !important; /* Force visibility */
     align-items: center;
     justify-content: center;
     position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    width: 50px;
-    height: 50px;
+    bottom: 30px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
-    background: var(--clr-primary);
+    background-color: var(--clr-primary);
     color: white;
-    font-size: 24px;
+    font-size: 28px;
     border: none;
-    z-index: 97;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    z-index: 400; /* Above the list but below the open editor */
+    cursor: pointer;
+  }
+
+  .main header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0.5rem;
+  width: 100%;
+}
+
+.main .header-hamburger {
+  display: block !important; 
+  color: var(--clr-text); 
+  cursor: pointer;
+  z-index: 10;
+  font-size: 22px;   
+}
+
+  .header-new-note-btn{
+    display: none;
   }
 }
+
+/* Modal Backdrop */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px); /* Modern blur effect */
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+/* Modal Box */
+.modal-container {
+  background: var(--clr-card-bg);
+  border: 1px solid var(--clr-border);
+  padding: 2rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.modal-container h3 {
+  margin-bottom: 1rem;
+  color: var(--clr-text);
+}
+
+.modal-container p {
+  color: var(--clr-muted);
+  font-size: 14px;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+/* Modal Buttons */
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.modal-btn-cancel {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text);
+  padding: 0.8rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.modal-btn-confirm {
+  flex: 1;
+  background: var(--clr-danger);
+  border: none;
+  color: white;
+  padding: 0.8rem;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.modal-btn-confirm:hover {
+  opacity: 0.9;
+}
+
+.editor-save-btn-primary {
+  background: var(--clr-primary);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.editor-save-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.editor-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
 

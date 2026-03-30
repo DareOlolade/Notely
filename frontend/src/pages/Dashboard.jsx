@@ -2,7 +2,35 @@ import axios from "axios";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaBars, FaSun, FaMoon } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaBars,
+  FaSun,
+  FaMoon,
+  FaTrash,
+  FaClock,
+} from "react-icons/fa";
+
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <h3>{title}</h3>
+        <p>{message}</p>
+        <div className="modal-actions">
+          <button className="modal-btn-cancel" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="modal-btn-confirm" onClick={onConfirm}>
+            Delete Note
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Dashboard = () => {
   const [notes, setNotes] = useState([]);
@@ -18,7 +46,8 @@ const Dashboard = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
-
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -27,9 +56,7 @@ const Dashboard = () => {
       setLoading(true);
       const token = localStorage.getItem("token");
       const response = await axios.get(`${API_URL}/api/note`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setNotes(response.data);
     } catch (error) {
@@ -43,25 +70,36 @@ const Dashboard = () => {
     fetchNotes();
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Function to handle clicking "+ New"
+  const handleCreateNew = () => {
+    setSelectedNote({ _id: "new", title: "", body: "" }); 
+    setEditTitle("");
+    setEditBody("");
+    setShowEditor(true);
+  };
+
+  // Modified Save function to handle both New and Edit
+  const handleSaveNewNote = async () => {
+    if (!editTitle.trim() && !editBody.trim()) return;
+
     try {
+      setIsSaving(true);
       const token = localStorage.getItem("token");
-      await axios.post(
+      const response = await axios.post(
         `${API_URL}/api/note`,
-        { title: title, body: body },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        { title: editTitle, body: editBody },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-      setTitle("");
-      setBody("");
-      setShowForm(false);
+
+      // After saving, switch from "new" state to the actual saved note
+      const savedNote = response.data;
+      setNotes([savedNote, ...notes]);
+      setSelectedNote(savedNote);
       fetchNotes();
     } catch (error) {
-      setError(error.message);
+      console.error("Save failed", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -69,9 +107,7 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.delete(`${API_URL}/api/note/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setEditBody("");
       setEditTitle("");
@@ -95,27 +131,37 @@ const Dashboard = () => {
     }
   }, [selectedNote]);
 
-  const handleEdit = async () => {
+  const autoSaveNote = async (titleToSave, bodyToSave) => {
+    if (!selectedNote) return;
+    if (selectedNote._id === "new") return;
     try {
+      setIsSaving(true);
       const token = localStorage.getItem("token");
       await axios.put(
         `${API_URL}/api/note/${selectedNote._id}`,
-        {
-          title: editTitle,
-          body: editBody,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        { title: titleToSave, body: bodyToSave },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-      setShowEditor(false);
       fetchNotes();
     } catch (error) {
-      setError(error.message);
+      console.error("Auto-save failed", error);
+    } finally {
+      setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    if (
+      !selectedNote ||
+      (editTitle === selectedNote.title && editBody === selectedNote.body)
+    ) {
+      return;
+    }
+    const delayDebounceFn = setTimeout(() => {
+      autoSaveNote(editTitle, editBody);
+    }, 1000);
+    return () => clearTimeout(delayDebounceFn);
+  }, [editTitle, editBody]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -125,22 +171,34 @@ const Dashboard = () => {
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
+
+  const triggerDelete = () => {
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = () => {
+    handleDelete(selectedNote._id);
+    setIsDeleteModalOpen(false);
+  };
+
+  useEffect(() => {
+  if (showEditor && window.innerWidth <= 650) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = 'unset';
+  }
+}, [showEditor]);
+
   return (
     <div className="dashboard">
       {/* =========SIDEBAR============= */}
       <div className={`sidebar ${isOpen ? "open" : ""}`}>
-        <div className="sidebar-heading">
-          <div className="logo"></div>
-          <h1>Notely</h1>
-        </div>
 
         <div className="sidebar-body">
           <ul>
             <li>All notes</li>
             <li>Recent</li>
-            <li>Favourite</li>
           </ul>
-
           <div className="sidebar-base">
             <div
               className={`theme-toggle-shutter ${theme}`}
@@ -173,10 +231,7 @@ const Dashboard = () => {
           <div className="notes-list">
             <header>
               <h1>Notes</h1>
-              <button
-                onClick={() => setShowForm(!showForm)}
-                className="header-new-note-btn"
-              >
+              <button onClick={handleCreateNew} className="header-new-note-btn">
                 + New
               </button>
               <FaBars
@@ -201,7 +256,6 @@ const Dashboard = () => {
                   onChange={(e) => setTitle(e.target.value)}
                 />
                 <textarea
-                  type="text"
                   value={body}
                   placeholder="Write your note here..."
                   onChange={(e) => setBody(e.target.value)}
@@ -225,7 +279,6 @@ const Dashboard = () => {
                 >
                   <h1>{note.title}</h1>
                   <p className="note-card-body">{note.body.slice(0, 60)}...</p>
-
                   <div className="note-card-last-line">
                     <p className="note-card-timestamps">
                       {new Date(note.createdAt).toLocaleDateString()}
@@ -233,7 +286,7 @@ const Dashboard = () => {
                   </div>
                 </div>
               ))}
-            <button className="fab" onClick={() => setShowForm(!showForm)}>
+            <button className="fab" onClick={handleCreateNew}>
               +
             </button>
           </div>
@@ -251,32 +304,49 @@ const Dashboard = () => {
                   <input
                     type="text"
                     value={editTitle}
+                    className="editor-note-title-input"
+                    placeholder="Note Title..."
                     onChange={(e) => setEditTitle(e.target.value)}
                   />
                   <textarea
                     value={editBody}
+                    className="editor-note-body-textarea"
+                    placeholder="Start writing your thoughts..."
                     onChange={(e) => setEditBody(e.target.value)}
                   />
                 </div>
-                <div className="editor-footer">
-                  <p>
-                    Last Updated:{" "}
-                    {new Date(selectedNote.updatedAt).toLocaleDateString()}
-                  </p>
 
-                  <div className="editor-footer-btn">
-                    <button
-                      className="editor-delete-btn"
-                      onClick={() => handleDelete(selectedNote._id)}
+                <div className="editor-footer">
+                  <div className="editor-footer-info">
+                    <p>
+                      Updated:{" "}
+                      {new Date(selectedNote.updatedAt).toLocaleDateString()}
+                    </p>
+                    <div
+                      className={`autosave-status ${isSaving ? "saving" : "saved"}`}
                     >
-                      Delete
-                    </button>
-                    <button
-                      onClick={() => handleEdit()}
-                      className="editor-save-btn"
-                    >
-                      {loading ? "Saving..." : "Save"}
-                    </button>
+                      <FaClock size="12px" />
+                      <span>{isSaving ? "Saving..." : "Synced"}</span>
+                    </div>
+                  </div>
+                  <div className="editor-footer-actions">
+                    {selectedNote._id === "new" ? (
+                      <button
+                        className="editor-save-btn-primary"
+                        onClick={handleSaveNewNote}
+                        disabled={!editTitle && !editBody}
+                      >
+                        Save Note
+                      </button>
+                    ) : (
+                      <button
+                        className="icon-btn delete"
+                        data-tooltip="Delete Note"
+                        onClick={triggerDelete}
+                      >
+                        <FaTrash size="15px" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -290,6 +360,14 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Note?"
+        message="This action cannot be undone. This note will be permanently removed."
+      />
     </div>
   );
 };
