@@ -1,6 +1,5 @@
 import axios from "axios";
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaArrowLeft,
@@ -9,7 +8,9 @@ import {
   FaMoon,
   FaTrash,
   FaClock,
+  FaLock,
 } from "react-icons/fa";
+import { encryptData, decryptData } from "../utils/encryption";
 
 const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
   if (!isOpen) return null;
@@ -51,6 +52,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+  // ✅ FIX 1: Decrypt all note bodies after fetching
   const fetchNotes = async () => {
     try {
       setLoading(true);
@@ -58,7 +60,21 @@ const Dashboard = () => {
       const response = await axios.get(`${API_URL}/api/note`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setNotes(response.data);
+
+      const decryptedNotes = response.data.map((note) => ({
+        ...note,
+        body: decryptData(note.body),
+      }));
+
+      setNotes(decryptedNotes);
+
+      // Keep selectedNote in sync with fresh data
+      if (selectedNote && selectedNote._id !== "new") {
+        const updated = decryptedNotes.find((n) => n._id === selectedNote._id);
+        if (updated) {
+          setSelectedNote(updated);
+        }
+      }
     } catch (error) {
       setError(error.message);
     } finally {
@@ -70,32 +86,45 @@ const Dashboard = () => {
     fetchNotes();
   }, []);
 
-  // Function to handle clicking "+ New"
   const handleCreateNew = () => {
-    setSelectedNote({ _id: "new", title: "", body: "" }); 
+    setSelectedNote({ _id: "new", title: "", body: "" });
     setEditTitle("");
     setEditBody("");
     setShowEditor(true);
   };
 
-  // Modified Save function to handle both New and Edit
+  // ✅ FIX 2: handleSaveNewNote — encrypt before sending, decrypt response
   const handleSaveNewNote = async () => {
     if (!editTitle.trim() && !editBody.trim()) return;
 
     try {
       setIsSaving(true);
       const token = localStorage.getItem("token");
+      const encryptedBody = encryptData(editBody);
+
       const response = await axios.post(
         `${API_URL}/api/note`,
-        { title: editTitle, body: editBody },
+        { title: editTitle, body: encryptedBody },
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      // After saving, switch from "new" state to the actual saved note
-      const savedNote = response.data;
-      setNotes([savedNote, ...notes]);
-      setSelectedNote(savedNote);
-      fetchNotes();
+      // Handle response — if API returns the single saved note:
+      if (Array.isArray(response.data)) {
+        const decryptedNotes = response.data.map((note) => ({
+          ...note,
+          body: decryptData(note.body),
+        }));
+        setNotes(decryptedNotes);
+        setSelectedNote(decryptedNotes[0]);
+      } else {
+        // API returns single note
+        const savedNote = {
+          ...response.data,
+          body: decryptData(response.data.body),
+        };
+        setNotes((prev) => [savedNote, ...prev]);
+        setSelectedNote(savedNote);
+      }
     } catch (error) {
       console.error("Save failed", error);
     } finally {
@@ -131,15 +160,18 @@ const Dashboard = () => {
     }
   }, [selectedNote]);
 
+  // ✅ FIX 3: Encrypt body before sending in auto-save
   const autoSaveNote = async (titleToSave, bodyToSave) => {
     if (!selectedNote) return;
     if (selectedNote._id === "new") return;
     try {
       setIsSaving(true);
       const token = localStorage.getItem("token");
+      const encryptedBody = encryptData(bodyToSave); // ← Was missing!
+
       await axios.put(
         `${API_URL}/api/note/${selectedNote._id}`,
-        { title: titleToSave, body: bodyToSave },
+        { title: titleToSave, body: encryptedBody },
         { headers: { Authorization: `Bearer ${token}` } },
       );
       fetchNotes();
@@ -182,18 +214,17 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-  if (showEditor && window.innerWidth <= 650) {
-    document.body.style.overflow = 'hidden';
-  } else {
-    document.body.style.overflow = 'unset';
-  }
-}, [showEditor]);
+    if (showEditor && window.innerWidth <= 650) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+  }, [showEditor]);
 
   return (
     <div className="dashboard">
       {/* =========SIDEBAR============= */}
       <div className={`sidebar ${isOpen ? "open" : ""}`}>
-
         <div className="sidebar-body">
           <ul>
             <li>All notes</li>
@@ -247,22 +278,6 @@ const Dashboard = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            {showForm && (
-              <form className="note-form" onSubmit={handleSubmit}>
-                <input
-                  type="text"
-                  value={title}
-                  placeholder="Note title..."
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-                <textarea
-                  value={body}
-                  placeholder="Write your note here..."
-                  onChange={(e) => setBody(e.target.value)}
-                />
-                <button className="editor-save-btn">Save note</button>
-              </form>
-            )}
 
             {notes
               .filter((note) =>
@@ -283,6 +298,11 @@ const Dashboard = () => {
                     <p className="note-card-timestamps">
                       {new Date(note.createdAt).toLocaleDateString()}
                     </p>
+                    <FaLock
+                      size="10px"
+                      style={{ marginLeft: "8px", opacity: 0.5 }}
+                      title="AES-256 Encrypted"
+                    />
                   </div>
                 </div>
               ))}
@@ -320,7 +340,9 @@ const Dashboard = () => {
                   <div className="editor-footer-info">
                     <p>
                       Updated:{" "}
-                      {new Date(selectedNote.updatedAt).toLocaleDateString()}
+                      {selectedNote.updatedAt
+                        ? new Date(selectedNote.updatedAt).toLocaleDateString()
+                        : "Not saved yet"}
                     </p>
                     <div
                       className={`autosave-status ${isSaving ? "saving" : "saved"}`}

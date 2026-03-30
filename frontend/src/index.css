@@ -488,6 +488,11 @@ button {
   color: var(--clr-muted);
 }
 
+.note-card-last-line{
+  display: flex;
+  justify-content: space-between;
+}
+
 .note-card-timestamps {
   font-size: var(--fs-timestamps);
   color: var(--clr-muted);
