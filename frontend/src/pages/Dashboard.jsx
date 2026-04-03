@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaArrowLeft,
@@ -49,10 +49,23 @@ const Dashboard = () => {
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // ✅ FIX: Use refs to track the latest values and prevent stale closures
+  const selectedNoteRef = useRef(selectedNote);
+  const isSavingRef = useRef(false);
+
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-  // ✅ FIX 1: Decrypt all note bodies after fetching
+  // Update refs when values change
+  useEffect(() => {
+    selectedNoteRef.current = selectedNote;
+  }, [selectedNote]);
+
+  useEffect(() => {
+    isSavingRef.current = isSaving;
+  }, [isSaving]);
+
   const fetchNotes = async () => {
     try {
       setLoading(true);
@@ -68,9 +81,11 @@ const Dashboard = () => {
 
       setNotes(decryptedNotes);
 
-      // Keep selectedNote in sync with fresh data
-      if (selectedNote && selectedNote._id !== "new") {
-        const updated = decryptedNotes.find((n) => n._id === selectedNote._id);
+      // ✅ FIX: Update selectedNote if it was edited
+      if (selectedNoteRef.current && selectedNoteRef.current._id !== "new") {
+        const updated = decryptedNotes.find(
+          (n) => n._id === selectedNoteRef.current._id,
+        );
         if (updated) {
           setSelectedNote(updated);
         }
@@ -93,7 +108,6 @@ const Dashboard = () => {
     setShowEditor(true);
   };
 
-  // ✅ FIX 2: handleSaveNewNote — encrypt before sending, decrypt response
   const handleSaveNewNote = async () => {
     if (!editTitle.trim() && !editBody.trim()) return;
 
@@ -108,7 +122,6 @@ const Dashboard = () => {
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      // Handle response — if API returns the single saved note:
       if (Array.isArray(response.data)) {
         const decryptedNotes = response.data.map((note) => ({
           ...note,
@@ -117,7 +130,6 @@ const Dashboard = () => {
         setNotes(decryptedNotes);
         setSelectedNote(decryptedNotes[0]);
       } else {
-        // API returns single note
         const savedNote = {
           ...response.data,
           body: decryptData(response.data.body),
@@ -127,6 +139,7 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error("Save failed", error);
+      setError("Failed to save note");
     } finally {
       setIsSaving(false);
     }
@@ -153,47 +166,85 @@ const Dashboard = () => {
     navigate("/login");
   };
 
+  // ✅ FIX: Only update edit fields when a different note is selected
   useEffect(() => {
     if (selectedNote) {
       setEditTitle(selectedNote.title);
       setEditBody(selectedNote.body);
     }
-  }, [selectedNote]);
+  }, [selectedNote?._id]); // Only trigger when note ID changes
 
-  // ✅ FIX 3: Encrypt body before sending in auto-save
+  // ✅ FIX: Improved auto-save with better state management
   const autoSaveNote = async (titleToSave, bodyToSave) => {
-    if (!selectedNote) return;
-    if (selectedNote._id === "new") return;
+    const currentNote = selectedNoteRef.current;
+
+    if (!currentNote) return;
+    if (currentNote._id === "new") return;
+    if (isSavingRef.current) return; // Prevent concurrent saves
+
+    // ✅ Don't save if nothing changed
+    if (titleToSave === currentNote.title && bodyToSave === currentNote.body) {
+      return;
+    }
+
     try {
       setIsSaving(true);
       const token = localStorage.getItem("token");
-      const encryptedBody = encryptData(bodyToSave); // ← Was missing!
+      const encryptedBody = encryptData(bodyToSave);
 
       await axios.put(
-        `${API_URL}/api/note/${selectedNote._id}`,
+        `${API_URL}/api/note/${currentNote._id}`,
         { title: titleToSave, body: encryptedBody },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      fetchNotes();
+
+      // ✅ FIX: Update the note in local state without full refetch
+      setNotes((prevNotes) =>
+        prevNotes.map((note) =>
+          note._id === currentNote._id
+            ? {
+                ...note,
+                title: titleToSave,
+                body: bodyToSave,
+                updatedAt: new Date().toISOString(),
+              }
+            : note,
+        ),
+      );
+
+      // ✅ Update selectedNote with new values
+      setSelectedNote((prev) => ({
+        ...prev,
+        title: titleToSave,
+        body: bodyToSave,
+        updatedAt: new Date().toISOString(),
+      }));
     } catch (error) {
       console.error("Auto-save failed", error);
+      setError("Failed to auto-save note");
     } finally {
       setIsSaving(false);
     }
   };
 
+  // ✅ FIX: Improved debounce logic with proper cleanup
   useEffect(() => {
-    if (
-      !selectedNote ||
-      (editTitle === selectedNote.title && editBody === selectedNote.body)
-    ) {
+    // Skip if no note selected or if it's a new note
+    if (!selectedNote || selectedNote._id === "new") {
       return;
     }
+
+    // Skip if values haven't actually changed
+    if (editTitle === selectedNote.title && editBody === selectedNote.body) {
+      return;
+    }
+
     const delayDebounceFn = setTimeout(() => {
       autoSaveNote(editTitle, editBody);
     }, 1000);
+
     return () => clearTimeout(delayDebounceFn);
-  }, [editTitle, editBody]);
+  }, [editTitle, editBody]); // Keep dependencies simple
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
